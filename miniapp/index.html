@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BarkasColor</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-card-hover: #222230;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #8b8b9e;
+            --text-muted: #5a5a6e;
+            --success: #00d9a5;
+            --warning: #ffc107;
+            --danger: #ff6b6b;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+        .bg-gradient { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at 20% 20%, rgba(108, 92, 231, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(0, 217, 165, 0.1) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+        .app { position: relative; z-index: 2; max-width: 100%; min-height: 100vh; padding-bottom: 100px; }
+
+        /* Header */
+        .header { padding: 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); backdrop-filter: blur(20px); position: sticky; top: 0; z-index: 100; background: rgba(10, 10, 15, 0.8); }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 20px var(--accent-glow); }
+        .logo-text { font-weight: 700; font-size: 20px; }
+        .logo-text span { color: var(--accent-light); }
+        .stats-badge { background: var(--bg-card); padding: 8px 14px; border-radius: 20px; font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border); }
+
+        /* Tabs */
+        .tabs { display: flex; padding: 16px 20px; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { padding: 12px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; white-space: nowrap; }
+        .tab.active { background: linear-gradient(135deg, var(--accent), var(--accent-light)); border-color: transparent; color: white; box-shadow: 0 4px 20px var(--accent-glow); }
+
+        /* Content */
+        .content { padding: 0 20px; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Search */
+        .search-box { position: relative; margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 18px 20px 18px 54px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 16px; color: var(--text-primary); font-size: 16px; font-family: 'Outfit', sans-serif; transition: all 0.3s ease; }
+        .search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 18px; }
+
+        /* Colors Grid */
+        .colors-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .color-card { background: var(--bg-card); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; cursor: pointer; }
+        .color-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--accent); }
+        .color-preview { height: 120px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .color-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .color-preview .hex-overlay { position: absolute; bottom: 8px; right: 8px; font-family: 'Space Mono', monospace; font-size: 11px; color: white; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 6px; }
+        .color-info { padding: 14px; }
+        .color-code { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+        .color-name { font-size: 12px; color: var(--text-secondary); }
+
+        /* HEX Generator */
+        .hex-generator { background: var(--bg-card); border-radius: 20px; padding: 24px; border: 1px solid var(--border); }
+        .hex-input-group { display: flex; gap: 12px; margin-bottom: 20px; }
+        .hex-input { flex: 1; padding: 16px 20px; background: var(--bg-secondary); border: 2px solid var(--border); border-radius: 12px; color: var(--text-primary); font-family: 'Space Mono', monospace; font-size: 18px; text-transform: uppercase; text-align: center; }
+        .hex-input:focus { outline: none; border-color: var(--accent); }
+        .generate-btn { padding: 16px 24px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); border: none; border-radius: 12px; color: white; font-weight: 600; font-size: 18px; cursor: pointer; transition: all 0.3s ease; }
+        .generate-btn:hover { transform: scale(1.05); }
+        .color-result { border-radius: 16px; overflow: hidden; display: none; }
+        .color-result.show { display: block; }
+        .result-preview { height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+        .result-hex { font-family: 'Space Mono', monospace; font-size: 28px; font-weight: 700; color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .result-name { font-size: 16px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 20px; }
+        .result-actions { display: flex; gap: 12px; padding: 16px; background: var(--bg-secondary); }
+        .action-btn { flex: 1; padding: 14px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; }
+        .action-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+        .action-btn.primary { background: var(--accent); border-color: transparent; }
+
+        /* Upload Section */
+        .upload-section { background: var(--bg-card); border-radius: 20px; padding: 24px; border: 1px solid var(--border); }
+        .upload-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: var(--bg-secondary); }
+        .upload-zone:hover { border-color: var(--accent); background: rgba(108, 92, 231, 0.05); }
+        .upload-icon { font-size: 48px; margin-bottom: 16px; }
+        .upload-text { font-size: 16px; color: var(--text-secondary); margin-bottom: 8px; }
+        .upload-hint { font-size: 13px; color: var(--text-muted); }
+        .image-preview-container { display: none; margin-top: 20px; }
+        .image-preview-container.show { display: block; }
+        .image-preview { width: 100%; max-height: 200px; object-fit: contain; border-radius: 12px; margin-bottom: 16px; }
+        .detected-colors { display: flex; gap: 12px; flex-wrap: wrap; }
+        .detected-color { width: 60px; height: 60px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; position: relative; border: 3px solid transparent; }
+        .detected-color:hover { transform: scale(1.1); }
+        .detected-color.selected { border-color: white; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .detected-color span { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
+
+        /* Recent Colors */
+        .recent-section { margin-top: 24px; }
+        .section-title { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-icon { font-size: 64px; margin-bottom: 16px; }
+        .empty-text { color: var(--text-secondary); font-size: 16px; }
+
+        /* Loading */
+        .loading { display: flex; align-items: center; justify-content: center; padding: 40px; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--bg-card); border: 1px solid var(--border); padding: 14px 24px; border-radius: 12px; font-size: 14px; z-index: 2000; opacity: 0; transition: all 0.3s ease; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(18, 18, 26, 0.95); backdrop-filter: blur(20px); border-top: 1px solid var(--border); padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; justify-content: space-around; z-index: 100; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 12px; cursor: pointer; transition: all 0.3s ease; color: var(--text-muted); }
+        .nav-item.active { color: var(--accent-light); background: rgba(108, 92, 231, 0.1); }
+        .nav-icon { font-size: 22px; }
+        .nav-label { font-size: 11px; font-weight: 500; }
+
+        /* Color Detail Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+        .modal { background: var(--bg-secondary); border-radius: 24px; width: 100%; max-width: 360px; overflow: hidden; }
+        .modal-image { width: 100%; height: 250px; object-fit: cover; }
+        .modal-color-preview { height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+        .modal-hex { font-family: 'Space Mono', monospace; font-size: 24px; font-weight: 700; color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.4); background: rgba(0,0,0,0.4); padding: 8px 16px; border-radius: 8px; }
+        .modal-body { padding: 20px; }
+        .modal-code { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .modal-name { font-size: 16px; color: var(--text-secondary); margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 12px; }
+        .modal-btn { flex: 1; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; border: none; }
+        .modal-btn.secondary { background: var(--bg-card); color: var(--text-primary); }
+        .modal-btn.primary { background: var(--accent); color: white; }
+
+        @media (min-width: 400px) { .colors-grid { grid-template-columns: repeat(3, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <div class="app">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🎨</div>
+                <div class="logo-text">Barkas<span>Color</span></div>
+            </div>
+            <div class="stats-badge" id="statsBadge">📦 Yuklanmoqda...</div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="search">🔍 Qidirish</button>
+            <button class="tab" data-tab="hex">🎯 HEX</button>
+            <button class="tab" data-tab="camera">📷 Rasm</button>
+        </div>
+
+        <main class="content">
+            <section class="section active" id="search-section">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Kod kiriting (masalan: 01-001)">
+                </div>
+
+                <div class="loading" id="searchLoading" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+
+                <div class="colors-grid" id="colorsGrid"></div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <div class="empty-icon">🎨</div>
+                    <div class="empty-text">Hech narsa topilmadi</div>
+                </div>
+            </section>
+
+            <section class="section" id="hex-section">
+                <div class="hex-generator">
+                    <div class="hex-input-group">
+                        <input type="text" class="hex-input" id="hexInput" placeholder="#FFFFFF" maxlength="7">
+                        <button class="generate-btn" id="generateBtn">→</button>
+                    </div>
+                    <div class="color-result" id="colorResult">
+                        <div class="result-preview" id="resultPreview">
+                            <div class="result-hex" id="resultHex">#FFFFFF</div>
+                            <div class="result-name" id="resultName">Oq</div>
+                        </div>
+                        <div class="result-actions">
+                            <button class="action-btn" id="copyHexBtn">📋 Nusxa</button>
+                            <button class="action-btn primary" id="sendToBotBtn">🤖 Botga</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="recent-section">
+                    <h3 class="section-title">So'nggi ranglar</h3>
+                    <div class="detected-colors" id="recentColors"></div>
+                </div>
+            </section>
+
+            <section class="section" id="camera-section">
+                <div class="upload-section">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">Rasm yuklang</div>
+                        <div class="upload-hint">JPG, PNG formatlar</div>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <div class="image-preview-container" id="previewContainer">
+                        <img class="image-preview" id="imagePreview" alt="Preview">
+                        <h3 class="section-title">Aniqlangan ranglar:</h3>
+                        <div class="detected-colors" id="detectedColors"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" data-nav="search"><span class="nav-icon">🔍</span><span class="nav-label">Qidirish</span></div>
+            <div class="nav-item" data-nav="hex"><span class="nav-icon">🎯</span><span class="nav-label">HEX</span></div>
+            <div class="nav-item" data-nav="camera"><span class="nav-icon">📷</span><span class="nav-label">Rasm</span></div>
+        </nav>
+    </div>
+
+    <div class="modal-overlay" id="colorModal">
+        <div class="modal">
+            <img class="modal-image" id="modalImage" src="" alt="Color">
+            <div class="modal-body">
+                <div class="modal-code" id="modalCode">01-001</div>
+                <div class="modal-name" id="modalName">Rang nomi</div>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div id="modalColorBox" style="width: 40px; height: 40px; border-radius: 8px;"></div>
+                    <span id="modalHex" style="font-family: 'Space Mono', monospace; font-size: 16px;">#FFFFFF</span>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn secondary" id="modalClose">Yopish</button>
+                    <button class="modal-btn primary" id="modalCopy">📋 Nusxa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"><span id="toastMessage">Muvaffaqiyatli!</span></div>
+
+    <script>
+        const API_URL = '';
+        const tg = window.Telegram?.WebApp;
+        if (tg && tg.initData) { tg.ready(); tg.expand(); }
+
+        const colorNames = { '#FF0000': 'Qizil', '#00FF00': 'Yashil', '#0000FF': "Ko'k", '#FFFF00': 'Sariq', '#FF00FF': 'Binafsha', '#00FFFF': 'Moviy', '#FFA500': 'Xavorang', '#800080': 'Siyoh', '#FFC0CB': 'Pushti', '#000000': 'Qora', '#FFFFFF': 'Oq', '#808080': 'Kulrang' };
+        const searchInput = document.getElementById('searchInput');
+        const colorsGrid = document.getElementById('colorsGrid');
+        const emptyState = document.getElementById('emptyState');
+        const searchLoading = document.getElementById('searchLoading');
+        const statsBadge = document.getElementById('statsBadge');
+
+        async function fetchAPI(endpoint) {
+            try {
+                // KESHNI AYLANIB O'TISH
+                const separator = endpoint.includes('?') ? '&' : '?';
+                const url = `${API_URL}${endpoint}${separator}t=${Date.now()}`;
+                const response = await fetch(url, { headers: { 'ngrok-skip-browser-warning': 'true' }, cache: "no-store" });
+                if (!response.ok) throw new Error('API xatosi');
+                return await response.json();
+            } catch (error) {
+                console.error('API xatosi:', error);
+                return null;
+            }
+        }
+
+        async function loadAllColors() {
+            searchLoading.style.display = 'flex';
+            colorsGrid.innerHTML = '';
+
+            const data = await fetchAPI('/api/colors');
+            searchLoading.style.display = 'none';
+
+            if (data) {
+                // 1. STATISTIKA: Doim ko'rsatamiz (ranglar bo'lmasa ham)
+                if (data.total !== undefined) {
+                    statsBadge.textContent = `📦 ${data.total} ta rang`;
+                }
+
+                // 2. RANGLAR: Faqat bor bo'lsa chiqaramiz
+                if (data.colors && data.colors.length > 0) {
+                    renderColors(data.colors);
+                    emptyState.style.display = 'none';
+                } else {
+                    // Agar ro'yxat bo'sh bo'lsa (Optimallashtirilgan rejim)
+                    // Xatolik deb o'ylamaslik uchun "Hech narsa topilmadi" demaymiz
+                    emptyState.style.display = 'none';
+                }
+            } else {
+                // Agar server umuman javob bermasa
+                statsBadge.textContent = '📦 0 ta rang';
+            }
+        }
+
+        async function searchColors(query) {
+            if (!query || query.length < 1) { loadAllColors(); return; }
+            searchLoading.style.display = 'flex';
+            colorsGrid.innerHTML = '';
+            const data = await fetchAPI(`/api/colors/search?q=${encodeURIComponent(query)}`);
+            searchLoading.style.display = 'none';
+            if (data && data.colors && data.colors.length > 0) {
+                renderColors(data.colors);
+                emptyState.style.display = 'none';
+            } else {
+                colorsGrid.innerHTML = '';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        function renderColors(colors) {
+            colorsGrid.innerHTML = colors.map(color => {
+                const hasImage = color.image_url;
+                const previewStyle = hasImage ? '' : `style="background: ${color.hex}"`;
+                const imageTag = hasImage ? `<img src="${color.image_url}" onerror="this.style.display='none'; this.parentElement.style.background='${color.hex}'">` : '';
+                return `<div class="color-card" onclick='showColorDetail(${JSON.stringify(color)})'><div class="color-preview" ${previewStyle}>${imageTag}<span class="hex-overlay">${color.hex}</span></div><div class="color-info"><div class="color-code">${color.code}</div><div class="color-name">${color.name}</div></div></div>`;
+            }).join('');
+        }
+
+        function showColorDetail(color) {
+            const modalImage = document.getElementById('modalImage');
+            if (color.image_url) { modalImage.src = color.image_url; modalImage.style.display = 'block'; } else { modalImage.style.display = 'none'; }
+            document.getElementById('modalCode').textContent = color.code;
+            document.getElementById('modalName').textContent = color.name;
+            document.getElementById('modalHex').textContent = color.hex;
+            document.getElementById('modalColorBox').style.background = color.hex;
+            document.getElementById('colorModal').classList.add('show');
+            window.currentColor = color;
+            if (tg && tg.initData) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab, .section, .nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.tab[data-tab="${tabName}"]`)?.classList.add('active');
+            document.getElementById(`${tabName}-section`)?.classList.add('active');
+            document.querySelector(`.nav-item[data-nav="${tabName}"]`)?.classList.add('active');
+        }
+
+        function getColorName(hex) {
+            hex = hex.toUpperCase(); if (colorNames[hex]) return colorNames[hex];
+            return 'Rang';
+        }
+
+        function generateColorPreview() {
+            let hex = document.getElementById('hexInput').value.trim().toUpperCase();
+            if (!hex.startsWith('#')) hex = '#' + hex;
+            if (!/^#[0-9A-F]{6}$/.test(hex)) { showToast("Noto'g'ri HEX!", 'error'); return; }
+            document.getElementById('resultPreview').style.background = hex;
+            document.getElementById('resultHex').textContent = hex;
+            document.getElementById('resultName').textContent = getColorName(hex);
+            document.getElementById('colorResult').classList.add('show');
+            saveRecentColor(hex);
+        }
+
+        function saveRecentColor(hex) {
+            let recent = JSON.parse(localStorage.getItem('recentColors') || '[]');
+            recent = recent.filter(c => c !== hex); recent.unshift(hex); recent = recent.slice(0, 8);
+            localStorage.setItem('recentColors', JSON.stringify(recent)); loadRecentColors();
+        }
+
+        function loadRecentColors() {
+            const recent = JSON.parse(localStorage.getItem('recentColors') || '[]');
+            const container = document.getElementById('recentColors');
+            if (recent.length === 0) { container.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">Hali ranglar yo\'q</p>'; return; }
+            container.innerHTML = recent.map(hex => `<div class="detected-color" style="background: ${hex}" onclick="quickSelectHex('${hex}')"><span>${hex}</span></div>`).join('');
+        }
+
+        function quickSelectHex(hex) { document.getElementById('hexInput').value = hex; generateColorPreview(); }
+        function handleImageUpload(file) { const reader = new FileReader(); reader.onload = function(e) { document.getElementById('imagePreview').src = e.target.result; document.getElementById('previewContainer').classList.add('show'); extractColorsFromImage(e.target.result); }; reader.readAsDataURL(file); }
+        function extractColorsFromImage(imageSrc) { const img = new Image(); img.crossOrigin = 'Anonymous'; img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); canvas.width = 50; canvas.height = 50; ctx.drawImage(img, 0, 0, 50, 50); const imageData = ctx.getImageData(0, 0, 50, 50).data; const colors = {}; for (let i = 0; i < imageData.length; i += 4) { const hex = '#' + [imageData[i], imageData[i+1], imageData[i+2]].map(x => (Math.round(x/32)*32).toString(16).padStart(2,'0')).join('').toUpperCase(); colors[hex] = (colors[hex] || 0) + 1; } renderDetectedColors(Object.keys(colors).slice(0,5)); }; img.src = imageSrc; }
+        function renderDetectedColors(colors) { document.getElementById('detectedColors').innerHTML = colors.map((hex, i) => `<div class="detected-color ${i===0?'selected':''}" style="background: ${hex}" onclick="selectDetectedColor(this, '${hex}')"><span>${hex}</span></div>`).join(''); }
+        function selectDetectedColor(el, hex) { document.querySelectorAll('.detected-color').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); saveRecentColor(hex); }
+        function showToast(msg, type='success') { const t = document.getElementById('toast'); document.getElementById('toastMessage').textContent = msg; t.className = `toast show ${type}`; setTimeout(() => t.classList.remove('show'), 2500); }
+
+        // Listeners
+        document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+        document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchTab(n.dataset.nav)));
+        let st; searchInput.addEventListener('input', (e) => { clearTimeout(st); st = setTimeout(() => searchColors(e.target.value), 300); });
+        document.getElementById('generateBtn').addEventListener('click', generateColorPreview);
+        document.getElementById('copyHexBtn').addEventListener('click', () => navigator.clipboard.writeText(document.getElementById('resultHex').textContent).then(() => showToast('Nusxa olindi!')));
+        document.getElementById('sendToBotBtn').addEventListener('click', () => { if(tg && tg.initData) { tg.sendData(JSON.stringify({action:'hex', hex: document.getElementById('resultHex').textContent})); showToast('Yuborildi!'); } else showToast('Telegram emas!', 'error'); });
+        document.getElementById('uploadZone').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('fileInput').addEventListener('change', (e) => { if(e.target.files[0]) handleImageUpload(e.target.files[0]); });
+        document.getElementById('modalClose').addEventListener('click', () => document.getElementById('colorModal').classList.remove('show'));
+        document.getElementById('modalCopy').addEventListener('click', () => { if(window.currentColor) navigator.clipboard.writeText(`${window.currentColor.code}: ${window.currentColor.hex}`).then(()=>showToast('Nusxa olindi!')); });
+
+        // Init
+        loadAllColors();
+        loadRecentColors();
+    </script>
+</body>
+</html>
