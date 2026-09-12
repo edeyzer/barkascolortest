@@ -51,6 +51,8 @@ from app.super_admin import (
 )
 from app.backup import backup_data_cmd
 from app.group_handlers import handle_group_text, handle_group_photo
+from app.export import export_cmd, handle_export
+from app.notifications import subscribe_cmd, unsubscribe_cmd
 
 
 async def inline_query(update, context):
@@ -129,6 +131,8 @@ async def main():
         BotCommand("history", "Qidiruv tarixi"),
         BotCommand("language", "Tilni o‘zgartirish"),
         BotCommand("lang", "Tilni o‘zgartirish"),
+        BotCommand("subscribe", "Yangi kodlar haqida xabar olish"),
+        BotCommand("unsubscribe", "Bildirishnomalarni o‘chirish"),
     ]
 
     admin_commands = user_commands + [
@@ -139,6 +143,7 @@ async def main():
         BotCommand("deletecode", "Kodni o‘chirish"),
         BotCommand("setalbum", "Albom biriktirish"),
         BotCommand("listalbums", "Albomlar ro‘yxati"),
+        BotCommand("export", "Katalogni Excel/PDF eksport qilish"),
     ]
 
     super_admin_commands = admin_commands + [
@@ -196,6 +201,9 @@ async def main():
     application.add_handler(CommandHandler("listalbums", list_albums_cmd))
     application.add_handler(CommandHandler("broadcast", broadcast_cmd))
     application.add_handler(CommandHandler("cancel", cancel_cmd))
+    application.add_handler(CommandHandler("subscribe", subscribe_cmd))
+    application.add_handler(CommandHandler("unsubscribe", unsubscribe_cmd))
+    application.add_handler(CommandHandler("export", export_cmd))
 
     # Admin
     application.add_handler(CommandHandler("editcode", edit_code_cmd))
@@ -222,6 +230,7 @@ async def main():
     application.add_handler(CallbackQueryHandler(handle_similar, pattern="^similar:"))
     application.add_handler(CallbackQueryHandler(handle_language, pattern="^lang_"))
     application.add_handler(CallbackQueryHandler(handle_broadcast, pattern="^broadcast_"))
+    application.add_handler(CallbackQueryHandler(handle_export, pattern="^export_"))
 
     # Guruh
     application.add_handler(MessageHandler(

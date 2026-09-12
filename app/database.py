@@ -54,7 +54,12 @@ async def init_db():
                     await conn.execute(f"ALTER TABLE images ADD COLUMN {col}")
                 except Exception:
                     pass
-                    
+
+            try:
+                await conn.execute("ALTER TABLE users ADD COLUMN subscribed INTEGER DEFAULT 1")
+            except Exception:
+                pass
+
         logger.info("✅ PostgreSQL bazasi tayyor")
     
     else:
@@ -88,7 +93,12 @@ async def init_db():
                     await db.execute(f"ALTER TABLE images ADD COLUMN {col}")
                 except Exception:
                     pass
-                    
+
+            try:
+                await db.execute("ALTER TABLE users ADD COLUMN subscribed INTEGER DEFAULT 1")
+            except Exception:
+                pass
+
             await db.commit()
         logger.info("✅ SQLite bazasi tayyor")
 

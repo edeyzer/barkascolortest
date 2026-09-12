@@ -8,8 +8,10 @@ from app.color_generator import ColorSquareGenerator
 from app.color_detector import SimpleColorDetector
 from app.utils import logger, check_rate_limit, get_color_name, get_user_lang
 from app.translations import get_text
+from app.notifications import notify_new_code
 from config import DB_TYPE
 import re
+import asyncio
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -197,7 +199,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 q = "INSERT INTO images (code, file_id, dominant_hex, color_name) VALUES ($1, $2, $3, $4)"
             await execute(q, text, photo_id, hex_color, color_name)
-            
+
+            # Yangi kod haqida obunachilarga xabar (asosiy oqimni bloklamaydi)
+            asyncio.create_task(notify_new_code(context.bot, text, photo_id, hex_color, color_name))
+
             await update.message.reply_text(
                 f"✅ `{text}` saqlandi! ({idx+1}/{len(queue)})\n🎨 {hex_color} ({color_name})",
                 parse_mode="Markdown"
